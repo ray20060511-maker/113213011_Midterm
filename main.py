@@ -19,6 +19,21 @@ class ArticleUpdate(BaseModel):
     category: str
     content: str
 
+class UserLogin(BaseModel):
+    username: str
+    role: str = "author"
+
+@app.post("/login", summary="使用者登入 (若不存在則自動建立帳號)")
+def login_or_register(user_data: UserLogin, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.username == user_data.username).first()
+    if not user:
+        user = models.User(username=user_data.username, role=user_data.role)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"message": f"歡迎新用戶 {user.username}！帳號已自動建立", "user": user}
+    return {"message": f"歡迎回來，{user.username}！", "user": user}
+
 @app.get("/", summary="前端首頁")
 def read_index():
     return FileResponse("index.html")
@@ -86,7 +101,18 @@ def submit_article(article_id: int, db: Session = Depends(database.get_db)):
 @app.get("/editor/pending-articles", summary="查看待審查清單")
 def get_pending_articles(db: Session = Depends(database.get_db)):
     articles = db.query(models.Article).filter(models.Article.status == "審查中").all()
-    return articles
+    result = []
+    for art in articles:
+        result.append({
+            "id": art.id,
+            "title": art.title,
+            "category": art.category,
+            "content": art.content,
+            "status": art.status,
+            "author_id": art.author_id,
+            "author_name": art.author.username if art.author else "未知"
+        })
+    return result
 
 @app.post("/editor/articles/{article_id}/approve", summary="審核通過 (審查中 => 已通過)")
 def approve_article(article_id: int, db: Session = Depends(database.get_db)):

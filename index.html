@@ -28,7 +28,7 @@
         }
         h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
 
-        .role-switch { display: flex; gap: 10px; }
+        .role-switch { display: flex; gap: 10px; align-items: center; }
         .btn {
             padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
             font-weight: 600; transition: 0.2s; font-size: 0.9rem;
@@ -46,7 +46,8 @@
             background: var(--card); padding: 24px; border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 24px;
         }
-        .form-group { margin-bottom: 15px; }
+        .login-box { max-width: 420px; margin: 40px auto; text-align: center; }
+        .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
         input, select, textarea {
             width: 100%; padding: 10px; border: 1px solid var(--border);
@@ -65,15 +66,19 @@
         .badge-reviewing { background: #dbeafe; color: #1e40af; }
         .badge-approved { background: #dcfce7; color: #166534; }
 
-        .hidden { display: none; }
+        .user-info-bar {
+            background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+            padding: 12px 20px; border-radius: 8px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .hidden { display: none !important; }
         .actions { display: flex; gap: 6px; flex-wrap: wrap; }
         
-        /* Modal 樣式 */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;
         }
-        .modal.hidden { display: none; }
         .modal-content {
             background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 600px;
         }
@@ -92,48 +97,63 @@
 
     <!-- 作者視角 -->
     <div id="author-section">
-        <div class="card">
-            <h2 id="form-title">新增投稿</h2>
-            <input type="hidden" id="edit-article-id">
+        <!-- 1. 作者登入卡片 (未登入時顯示) -->
+        <div id="author-login-card" class="card login-box">
+            <h2 style="margin-top:0;">作者登入 / 自動註冊</h2>
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">輸入您的作者名稱，系統將自動建立或載入您的專屬帳號</p>
             <div class="form-group">
-                <label>作者 ID (測試用預設為 1)</label>
-                <input type="number" id="author-id" value="1" min="1" onchange="loadAuthorArticles()">
+                <label>作者名稱</label>
+                <input type="text" id="login-username" placeholder="例如：陳大文、author01..." onkeypress="if(event.key==='Enter') loginAuthor()">
             </div>
-            <div class="form-group">
-                <label>文章類別</label>
-                <select id="article-category">
-                    <option value="資訊科技">資訊科技</option>
-                    <option value="人文社會">人文社會</option>
-                    <option value="商業管理">商業管理</option>
-                    <option value="自然科學">自然科學</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>文章標題</label>
-                <input type="text" id="article-title" placeholder="請輸入稿件標題...">
-            </div>
-            <div class="form-group">
-                <label>文章內容</label>
-                <textarea id="article-content" placeholder="請輸入文章詳細內容..."></textarea>
-            </div>
-            <button class="btn btn-primary" onclick="saveArticle()">儲存稿件 (編輯中)</button>
-            <button id="btn-cancel-edit" class="btn btn-outline hidden" onclick="resetForm()">取消編輯</button>
+            <button class="btn btn-primary" style="width:100%;" onclick="loginAuthor()">登入工作台</button>
         </div>
 
-        <div class="card">
-            <h2>我的投稿清單</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>類別</th>
-                        <th>標題</th>
-                        <th>審查狀態</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="author-article-list"></tbody>
-            </table>
+        <!-- 2. 作者工作台內容 (登入後顯示) -->
+        <div id="author-workspace" class="hidden">
+            <div class="user-info-bar">
+                <span>👤 目前登入作者：<strong id="display-username"></strong> (系統編號 #<span id="display-userid"></span>)</span>
+                <button class="btn btn-outline btn-sm" style="background:white;" onclick="logoutAuthor()">切換帳號 / 登出</button>
+            </div>
+
+            <div class="card">
+                <h2 id="form-title">新增投稿</h2>
+                <input type="hidden" id="edit-article-id">
+                <div class="form-group">
+                    <label>文章類別</label>
+                    <select id="article-category">
+                        <option value="資訊科技">資訊科技</option>
+                        <option value="人文社會">人文社會</option>
+                        <option value="商業管理">商業管理</option>
+                        <option value="自然科學">自然科學</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>文章標題</label>
+                    <input type="text" id="article-title" placeholder="請輸入稿件標題...">
+                </div>
+                <div class="form-group">
+                    <label>文章內容</label>
+                    <textarea id="article-content" placeholder="請輸入文章詳細內容..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="saveArticle()">儲存稿件 (編輯中)</button>
+                <button id="btn-cancel-edit" class="btn btn-outline hidden" onclick="resetForm()">取消編輯</button>
+            </div>
+
+            <div class="card">
+                <h2>我的投稿清單</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>類別</th>
+                            <th>標題</th>
+                            <th>審查狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="author-article-list"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -171,7 +191,8 @@
 </div>
 
 <script>
-    const API_BASE = ""; // 同源部署可直接留空
+    const API_BASE = "";
+    let currentUser = null; // 儲存目前登入的使用者物件 { id, username, role }
 
     // 切換角色視角
     function switchRole(role) {
@@ -180,7 +201,7 @@
             document.getElementById('editor-section').classList.add('hidden');
             document.getElementById('btn-author-mode').classList.add('active');
             document.getElementById('btn-editor-mode').classList.remove('active');
-            loadAuthorArticles();
+            if (currentUser) loadAuthorArticles();
         } else {
             document.getElementById('author-section').classList.add('hidden');
             document.getElementById('editor-section').classList.remove('hidden');
@@ -190,7 +211,47 @@
         }
     }
 
-    // 取得狀態標籤樣式
+    // --- 登入與登出邏輯 ---
+    async function loginAuthor() {
+        const username = document.getElementById('login-username').value.trim();
+        if (!username) {
+            alert("請輸入作者名稱！");
+            return;
+        }
+
+        const res = await fetch(`${API_BASE}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, role: 'author' })
+        });
+
+        if (!res.ok) {
+            alert("登入失敗，請檢查後端伺服器狀態！");
+            return;
+        }
+
+        const data = await res.json();
+        currentUser = data.user;
+
+        // 更新畫面顯示
+        document.getElementById('display-username').innerText = currentUser.username;
+        document.getElementById('display-userid').innerText = currentUser.id;
+        
+        // 隱藏登入框，顯示工作台
+        document.getElementById('author-login-card').classList.add('hidden');
+        document.getElementById('author-workspace').classList.remove('hidden');
+        
+        loadAuthorArticles();
+    }
+
+    function logoutAuthor() {
+        currentUser = null;
+        resetForm();
+        document.getElementById('login-username').value = "";
+        document.getElementById('author-login-card').classList.remove('hidden');
+        document.getElementById('author-workspace').classList.add('hidden');
+    }
+
     function getStatusBadge(status) {
         if (status === '編輯中') return `<span class="badge badge-editing">編輯中</span>`;
         if (status === '審查中') return `<span class="badge badge-reviewing">審查中</span>`;
@@ -200,11 +261,16 @@
 
     // --- 作者功能 ---
     async function loadAuthorArticles() {
-        const authorId = document.getElementById('author-id').value;
-        const res = await fetch(`${API_BASE}/authors/${authorId}/articles`);
+        if (!currentUser) return;
+        const res = await fetch(`${API_BASE}/authors/${currentUser.id}/articles`);
         const articles = await res.json();
         const tbody = document.getElementById('author-article-list');
         tbody.innerHTML = '';
+
+        if (articles.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">目前尚無任何投稿紀錄</td></tr>`;
+            return;
+        }
 
         articles.forEach(art => {
             const isEditing = art.status === '編輯中';
@@ -227,8 +293,8 @@
     }
 
     async function saveArticle() {
+        if (!currentUser) return;
         const editId = document.getElementById('edit-article-id').value;
-        const authorId = document.getElementById('author-id').value;
         const payload = {
             category: document.getElementById('article-category').value,
             title: document.getElementById('article-title').value,
@@ -247,7 +313,7 @@
                 body: JSON.stringify(payload)
             });
         } else {
-            await fetch(`${API_BASE}/authors/${authorId}/articles`, {
+            await fetch(`${API_BASE}/authors/${currentUser.id}/articles`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -294,6 +360,11 @@
         const tbody = document.getElementById('editor-article-list');
         tbody.innerHTML = '';
 
+        if (articles.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">目前沒有待審查的稿件</td></tr>`;
+            return;
+        }
+
         articles.forEach(art => {
             tbody.innerHTML += `
                 <tr>
@@ -327,9 +398,6 @@
         await fetch(`${API_BASE}/editor/articles/${id}/${action}`, { method: 'POST' });
         loadPendingArticles();
     }
-
-    // 頁面載入時初始化
-    loadAuthorArticles();
 </script>
 </body>
 </html>
